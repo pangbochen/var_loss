@@ -34,7 +34,7 @@ class FeatureVarDataset(data.Dataset):
         if type == 'train':
             feature = data_df[feature_column].values[:index_slice]
             label = data_df[label_column].values[:index_slice]
-        else:
+        elif type == 'test':
             feature = data_df[feature_column].values[index_slice:]
             label = data_df[label_column].values[index_slice:]
 
