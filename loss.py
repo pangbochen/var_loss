@@ -16,3 +16,22 @@ class VarLoss(Function):
         loss = loss.pow(2)
         loss = loss.std(dim=1).squeeze()
         return loss
+
+    def backward(ctx, *grad_outputs):
+        return None
+
+
+def var_loss_01(target, output):
+    cross_loss_matrix = F.mse_loss(target, output, reduce=False)
+    loss = torch.std(cross_loss_matrix) + cross_loss_matrix.mean()
+    return loss
+
+
+def var_loss_02(target, output):
+    '''Parameters
+    target : (batch_size) prediction for the label
+
+    abs l1
+    var
+    '''
+    loss = torch.abs(target-output)
