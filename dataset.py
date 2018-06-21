@@ -57,20 +57,24 @@ class FeatureVarDataset(data.Dataset):
         return data, label
 
 class FeatureDataset(data.Dataset):
-    def __init__(self, data_FN='dataset.pkl', type='train'):
+    def __init__(self, data_FN='data.csv', type='train', label_column='return'):
         self.data_FN = data_FN
-        self.feature, self.label = self.precess(self.data_FN, type)
+        self.feature, self.label = self.process(self.data_FN, type, label_column)
 
 
-    def precess(self, data_FN, type):
+    def process(self, data_FN, type, label_column):
         # 由于要使用var作为优化目标，将原始的数据组成group，优化group内mse varience
         # 使用NN中batch_size的概念，优化长度为batch_szie中的loss值
         data_df = pd.read_csv(data_FN, dtype={'stock_id':str})
 
         data_df = self.data_precess(data_df)
-
-        feature_column = list(data_df.columns[2:-3])
-        label_column = 'return'
+        # return should in the columns
+        find_id = -1
+        for i in range(data_df.columns.shape[0]):
+            if data_df.columns[i] == 'return':
+                find_id = i # update
+        feature_column = list(data_df.columns[2:find_id])
+        label_column = label_column
 
         num_records = data_df.shape[0]
         index_slice = int(num_records*0.8)
@@ -82,7 +86,7 @@ class FeatureDataset(data.Dataset):
             feature = data_df[feature_column].values[index_slice:]
             label = data_df[label_column].values[index_slice:]
         else:
-            raise NotImplementedError
+            raise NotImplementedError('type {} is not supported')
 
         return feature, label
 
@@ -127,7 +131,7 @@ class FeatureDataset(data.Dataset):
         return data, label
 
 if __name__ == '__main__':
-    data_FN = 'C:/Users/pangbochen/Documents/finance/Efund/DT_RF/data.csv'
+    data_FN = 'data.csv'
     print(os.path.exists(data_FN))
     dataset = FeatureVarDataset(data_FN)
     data, label = dataset[0]
