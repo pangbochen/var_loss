@@ -9,10 +9,43 @@ from model import NSM, LCM, LRM
 from dataset import FeatureVarDataset, FeatureDataset
 from loss import VarLoss
 from visualize import Visualizer
+import sys, getopt
 
-batch_size = 256
+
+batch_size = 2048
 lr = 0.01
-epochs = 300
+epochs = 200
+is_debug = False
+
+
+
+
+# init visualizer
+vis_env = 'var_loss_mix'   # original + std
+# vis_env = 'var_loss_alpha'   # alpha * original + (1-alpha) * std
+# vis_env = 'var_loss_org'  # original only
+# vis_env = 'var_loss_std'  # std only
+# vis_enc = 'var_loss_course' # course mode
+
+alpha_for_std = 0.5
+
+
+# update vis_env if argv
+opts, args = getopt.getopt(sys.argv[1:], '', ["vis_env=", "alpha="])
+for op, value in opts:
+    if op == '--vis_env':
+        print('vis_env is {}'.format(value))
+        vis_env = str(value)
+    elif op == '--alpha':
+        alpha_for_std = float(value)
+if vis_env == 'var_loss_alpha':
+    vis_env_name = vis_env+'_'+str(alpha_for_std)
+elif vis_env == 'var_loss_course':
+    vis_env_name = vis_env+'_'+str(alpha_for_std)
+else:
+    vis_env_name = vis_env
+
+vis = Visualizer(vis_env_name)
 
 # For data file, classifcatoin and the regression problems are different
 # we need to preprocess the data to generate the suitable label int the preprocess part
@@ -36,12 +69,12 @@ elif task_type == 'regression':
 
 train_loader  = torch.utils.data.DataLoader(
     FeatureDataset(data_FN=data_FN,type='train', label_column=label_column),
-    batch_size=batch_size, shuffle=True
+    batch_size=batch_size, shuffle=False,
 )
 
 test_loader = torch.utils.data.DataLoader(
     FeatureDataset(data_FN=data_FN,type='test', label_column=label_column),
-    batch_size=batch_size, shuffle=True
+    batch_size=batch_size, shuffle=False
 )
 
 
@@ -54,8 +87,13 @@ plot_batch = 100
 
 print('begin...')
 
-# init visualizer
-vis = Visualizer('var_loss')
+
+
+# log config setting in this model
+vis.log('env : {}'.format(vis_env))
+vis.log('batch_size : {}'.format(batch_size))
+vis.log('learning_rate : {}'.format(lr))
+vis.log('task_type : {}'.format(task_type))
 
 for epoch in range(epochs):
     print(epoch)
@@ -92,12 +130,41 @@ for epoch in range(epochs):
         '''
 
         # use cross_entropy
-        print(target.shape)
-        print(output.shape)
+
         target = target.long()
-        loss_matrix = F.cross_entropy(output, target, reduce=False)
-        loss = torch.std(loss_matrix) + loss_matrix.mean()
-        print(loss.requires_grad)
+
+        if task_type == 'classification':
+            loss_matrix = F.cross_entropy(output, target, reduce=False)
+            var_loss = torch.std(loss_matrix)
+            # TODO
+            # loss matrix weight
+            if vis_env == 'var_loss_mix':
+                # the naive mixed way
+                loss = var_loss + loss_matrix.mean() # in this case, add std
+            elif vis_env == 'var_loss_course':
+                # TODO
+                # 课程学习，先学简单的，再难的
+                # 优化original loss， then std_loss
+                if epoch < 100:
+                    loss = loss_matrix.mean()
+                else:
+                    alpha = alpha_for_std
+                    loss = (1 - alpha) * var_loss + alpha * loss_matrix.mean()
+                pass
+            elif vis_env == 'var_loss_alpha':
+                alpha = alpha_for_std
+                loss = (1 - alpha) * var_loss + alpha * loss_matrix.mean()  # in this case, add std
+            elif vis_env == 'var_loss_org':
+                loss = loss_matrix.mean() # in this case, donnot add std into training target,
+            elif vis_env == 'var_loss_std':
+                loss = var_loss
+            else:
+                raise NotImplementedError('{} is not supported'.format(vis_env))
+
+            if is_debug:
+                print(target.shape)
+                print(output.shape)
+                print(loss.requires_grad)
         '''
         Part I
         regression part
