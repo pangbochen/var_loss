@@ -20,7 +20,9 @@ Var loss
 - loss函数
     - 在loss函数中加入样本weight
     - 在样本加入对loss波动的计算
-    
+
+## 权重的选择机制
+
 ### loss函数的选择
 
 由计量经济学可以知道，对于使用线性模型，MSE是最优的loss function
