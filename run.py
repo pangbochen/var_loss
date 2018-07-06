@@ -14,3 +14,12 @@ cmd_list = [
 
 for cmd in cmd_list:
     os.system(cmd_prefix+' '+cmd)
+
+
+
+
+# asfdsa
+
+
+
+# temp
