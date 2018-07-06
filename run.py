@@ -14,6 +14,7 @@ cmd_list = [
 
 for cmd in cmd_list:
     os.system(cmd_prefix+' '+cmd)
+<<<<<<< HEAD
 
 
 
@@ -23,3 +24,5 @@ for cmd in cmd_list:
 
 
 # temp
+=======
+>>>>>>> 412de234568b561feaa7797402026dd7a832d801
